@@ -2,11 +2,9 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import tensorflow as tf
-from tensorflow.keras.preprocessing import image
 import numpy as np
 import io
 from PIL import Image
-import json
 
 app = FastAPI()
 
@@ -19,18 +17,14 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-# Load class names from metadata
-metadata_path = 'model/metadata.json'
-with open(metadata_path, 'r') as f:
-    metadata = json.load(f)
-
+# Define class names
 class_names = [
     'Anthracnose', 'algal leaf', 'bird eye spot', 'brown blight',
     'gray light', 'healthy', 'red leaf spot', 'white spot'
 ]
 
 # Absolute path to the model file
-model_path = 'model/plant_disease_model_v8.keras'
+model_path = 'tea_modelv3.h5'
 
 # Load the entire model
 model = tf.keras.models.load_model(model_path)
@@ -43,8 +37,8 @@ async def predict(file: UploadFile = File(...)):
     
     # Preprocess the image
     img = img.resize((224, 224))
-    img_array = image.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)  # Create batch axis
+    img_array = np.array(img) / 255.0  # Normalize the image
+    img_array = np.expand_dims(img_array, 0)  # Create batch axis
     
     # Predict
     predictions = model.predict(img_array)
